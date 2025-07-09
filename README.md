@@ -1,6 +1,6 @@
 # Galera-Maxscale
 
-Galera Replication
+## Galera Replication
 1.	Install MariaDB Server and Galera on 3 servers. Start MariaDB Service.
 2.	Confirm Galera directory, it is usually `/usr/lib64/galera-4` or `/usr/lib64/galera`
 3.	Add below parameters in `/etc/my.cnf.d/server.cnf` file under [galera] block:
@@ -18,14 +18,14 @@ innodb_autoinc_lock_mode=2
 bind-address=192.168.249.139
 ```
 
-5.	Run “systemctl stop mariadb” on all servers.
-6.	Run “galera_new_cluster” on 1 server and “systemctl start mariadb” on other servers.
-a.	If there is a issue then open /var/lib/mysql/grastate.dat and change “safe_to_bootstrap: 0” to “safe_to_bootstrap: 1”
-b.	Also, there can be issue of members in /var/lib/mysql/gvwstate.dat, then remove all members and save file.
-7.	Run this command to check if number of nodes in cluster are correct - mysql -u root -e "SHOW STATUS LIKE 'wsrep_cluster_size';"
+5.	Run `systemctl stop mariadb` on all servers.
+6.	Run `galera_new_cluster` on master server and `systemctl start mariadb` on other servers.
+a.	If there is an issue during cluster start then open `/var/lib/mysql/grastate.dat` and change `safe_to_bootstrap: 0` to `safe_to_bootstrap: 1`
+b.	Also, there can be issue of members in `/var/lib/mysql/gvwstate.dat` then remove all members and save file.
+7.	Run this command to check if number of nodes in cluster are correct `mysql -u root -e "SHOW STATUS LIKE 'wsrep_cluster_size';"`
 8.	Verify by creating database in one server and check its existence from other servers.
-9.	Also verify by stopping one server check "SHOW STATUS LIKE 'wsrep_cluster_size';" which will show updated cluster size and then start that server and check again.
-10.	“SHOW STATUS LIKE 'wsrep_last_committed';” shows sequence number of node. Node with the highest value is considered the most up-to-date in terms of committed transactions.
+9.	Also verify by stopping one server and then check `mysql -u root -e "SHOW STATUS LIKE 'wsrep_cluster_size';"` which will show updated cluster size and then start that server and check again.
+10.	`mysql -u root -e "SHOW STATUS LIKE 'wsrep_last_committed';"` shows sequence number of node. Node with the highest value is considered the most up-to-date in terms of committed transactions.
 
 
 
@@ -33,18 +33,19 @@ b.	Also, there can be issue of members in /var/lib/mysql/gvwstate.dat, then remo
 
 
 
-Maxscale
+## Maxscale High-Availibilty
 1.	Download Maxscale from https://mariadb.com/downloads/community/maxscale/ and ftp to servers where you will run maxscale.
 2.	Install by method given below
-a.	rpm -ivh libatomic-4.8.5-44.el7.x86_64.rpm
-b.	rpm -ivh libicu-50.2-4.el7_7.x86_64.rpm
-c.	rpm -ivh libtool-ltdl-2.4.2-22.el7_3.x86_64.rpm
-d.	rpm -ivh unixODBC-2.3.1-14.el7.x86_64.rpm
-e.	rpm -ivh maxscale-23.08.4-1.rhel.7.x86_64.rpm
+a.	`rpm -ivh libatomic-4.8.5-44.el7.x86_64.rpm`
+b.	`rpm -ivh libicu-50.2-4.el7_7.x86_64.rpm`
+c.	`rpm -ivh libtool-ltdl-2.4.2-22.el7_3.x86_64.rpm`
+d.	`rpm -ivh unixODBC-2.3.1-14.el7.x86_64.rpm`
+e.	`rpm -ivh maxscale-23.08.4-1.rhel.7.x86_64.rpm`
 3.	Install MariaDB client on your Maxscale Server.
-4.	Make sure “/var/run/maxscale” and “/var/lib/maxscale/maxscale.cnf.d” exists
-5.	If you are facing “Executable path is not absolute” error then edit service file “/usr/lib/systemd/system/maxscale.service” and check “ExecStartPre” if there is + sign then remove it then run “systemctl daemon-reload” and try to start service.
-6.	If maxscale service is enabled and service is unable to start at boot due to “/var/run/maxscale” not present then create a bash script to make directory and change its user and group to “maxscale” and make it executable, then add it in service file “/usr/lib/systemd/system/maxscale.service” in [Service] block as:
+4.	Make sure `/var/run/maxscale` and `/var/lib/maxscale/maxscale.cnf.d` exists
+5.	If you are facing “Executable path is not absolute” error then edit service file `/usr/lib/systemd/system/maxscale.service` and check `ExecStartPre` if there is + sign then remove it then run `systemctl daemon-reload` and try to start service.
+6.	If maxscale service is enabled and service is unable to start at boot due to “/var/run/maxscale” not present then create a bash script to make directory and change its user and group to “maxscale” and make it executable, then add it in service file `/usr/lib/systemd/system/maxscale.service` in [Service] block as:
+```
 [Service]
 Type=forking
 Restart=on-abort
@@ -55,20 +56,24 @@ PIDFile=/var/run/maxscale/maxscale.pid
 User=maxscale
 Group=maxscale
 ExecStart=/usr/bin/maxscale
-7.	If you are facing “/usr/bin/install: cannot change owner and permissions of ‘/var/run/maxscale’: Operation not permitted” then run “chown maxscale:maxscale /var/run/maxscale” and “chmod 755 /var/run/maxscale” then run “systemctl daemon-reload” and try to start service.
-8.	Start service by “systemctl start maxscale”
+```
+7.	If you are facing `/usr/bin/install: cannot change owner and permissions of ‘/var/run/maxscale’: Operation not permitted` then run `chown maxscale:maxscale /var/run/maxscale` and `chmod 755 /var/run/maxscale` then run `systemctl daemon-reload`
+8.	Start service by `systemctl start maxscale`
 9.	Create a user and give privlages on DB to maxscale server as:
-a.	CREATE USER 'maxscale'@'maxscale_server_ip' IDENTIFIED BY 'abc';
-b.	GRANT SELECT ON mysql.user TO 'maxscale'@'maxscale_server_ip';
-c.	GRANT SELECT ON mysql.db TO 'maxscale'@'maxscale_server_ip';
-d.	GRANT SELECT ON mysql.tables_priv TO 'maxscale'@'maxscale_server_ip';
-e.	GRANT SELECT ON mysql.roles_mapping TO 'maxscale'@'maxscale_server_ip';
-f.	GRANT SLAVE MONITOR ON *.* TO 'maxscale'@'maxscale_server_ip' IDENTIFIED BY 'abc';
-g.	GRANT SHOW DATABASES ON *.* TO 'maxscale'@'maxscale_server_ip';
-h.	GRANT REPLICATION CLIENT on *.* to 'maxscale'@'maxscale_server_ip';
-i.	GRANT SELECT ON mysql.* TO 'maxscale'@'maxscale_server_ip';
-j.	FLUSH PRIVILEGES;
-10.	Edit “/etc/maxscale.cnf” as below:
+```
+CREATE USER 'maxscale'@'maxscale_server_ip' IDENTIFIED BY 'abc';
+GRANT SELECT ON mysql.user TO 'maxscale'@'maxscale_server_ip';
+GRANT SELECT ON mysql.db TO 'maxscale'@'maxscale_server_ip';
+GRANT SELECT ON mysql.tables_priv TO 'maxscale'@'maxscale_server_ip';
+GRANT SELECT ON mysql.roles_mapping TO 'maxscale'@'maxscale_server_ip';
+GRANT SLAVE MONITOR ON *.* TO 'maxscale'@'maxscale_server_ip' IDENTIFIED BY 'abc';
+GRANT SHOW DATABASES ON *.* TO 'maxscale'@'maxscale_server_ip';
+GRANT REPLICATION CLIENT on *.* to 'maxscale'@'maxscale_server_ip';
+GRANT SELECT ON mysql.* TO 'maxscale'@'maxscale_server_ip';
+FLUSH PRIVILEGES;
+```
+10.	Edit `/etc/maxscale.cnf` as below:
+```
 [maxscale]
 threads=auto
  
@@ -124,6 +129,7 @@ type=listener
 service=Read-Write-Service
 protocol=mariadbprotocol
 port=4006
+```
 11.	Check maxscale logs by “tail -100 /var/log/maxscale/maxscale.log”
 12.	Check “SHOW VARIABLES LIKE 'event_scheduler';” it should be “ON” if not then run “SET GLOBAL event_scheduler = ON;”
 13.	Verify using “maxctrl list services” and “maxctrl list servers”
