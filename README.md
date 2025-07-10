@@ -79,19 +79,19 @@ threads=auto
  
 [node1]
 type=server
-address=192.168.249.149
+address=x.x.x.4x(or hostname)
 port=3306
 protocol=MariaDBBackend
  
 [node2]
 type=server
-address=192.168.249.148
+address=x.x.x.5x(or hostname)
 port=3306
 protocol=MariaDBBackend
  
 [node3]
 type=server
-address=192.168.249.150
+address=x.x.x.6x(or hostname)
 port=3306
 protocol=MariaDBBackend
  
@@ -130,8 +130,8 @@ service=Read-Write-Service
 protocol=mariadbprotocol
 port=4006
 ```
-11.	Check maxscale logs by “tail -100 /var/log/maxscale/maxscale.log”
-12.	Check “SHOW VARIABLES LIKE 'event_scheduler';” it should be “ON” if not then run “SET GLOBAL event_scheduler = ON;”
-13.	Verify using “maxctrl list services” and “maxctrl list servers”
-14.	Connect to maxscale server from one DB server using “mysql -u'maxscale' -h'192.168.249.147' -P'4008' -p” and check “SHOW PROCESSLIST;”
+11.	Check maxscale logs by `tail -100 /var/log/maxscale/maxscale.log`
+12.	Check `SHOW VARIABLES LIKE 'event_scheduler';` it should be “ON” if not then run `SET GLOBAL event_scheduler = ON;`
+13.	Verify using `maxctrl list services` and `maxctrl list servers`
+14.	Connect to maxscale server from one DB server using `mysql -u'maxscale' -h'x.x.x.4x' -P'4008' -p” and check “SHOW PROCESSLIST;`
 15.	Test by creating database from maxscale server and check if it is visible in DB server.
