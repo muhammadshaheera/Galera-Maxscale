@@ -135,3 +135,45 @@ port=4006
 13.	Verify using `maxctrl list services` and `maxctrl list servers`
 14.	Connect to maxscale server from one DB server using `mysql -u'maxscale' -h'x.x.x.4x' -P'4008' -p” and check “SHOW PROCESSLIST;`
 15.	Test by creating database from maxscale server and check if it is visible in DB server.
+
+
+
+
+
+
+
+## Maxscale as Load Balancer (with Keepalived)
+1.	Setup a Galera Cluster with 3 nodes
+2.	Setup Maxscale on 2 servers and make sure both are connected to Galera cluster.
+3.	Install keepalived on both maxscale servers.
+4.	Edit `/etc/keepalived/keepalived.conf` on both servers as:
+```
+! Configuration File for keepalived
+ 
+vrrp_script check_maxscale {
+    script "/bin/systemctl status maxscale"
+interval 2
+}
+ 
+vrrp_instance VI_1 {
+    state MASTER
+    interface ens33
+    virtual_router_id 51
+    priority 11
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        x.x.x.x(virtual IP)
+    }
+    track_script {
+    check_maxscale
+    }
+ 
+}
+```
+5.	Edit virtual_ipaddress(same on both maxscale servers), interface, state as `BACKUP` or `MASTER` as per requirement and start keepalived service on master and then start on slave.
+6.	Check on master by `ifconfig` or `ip a` after starting service. It will display a virtual IP in active interface section.
+7.	Test failover by shutting down master server and check on backup server, it should display same virtual IP in active interface section.
